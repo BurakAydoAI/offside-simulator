@@ -1,0 +1,16 @@
+{
+  "name": "offside-simulator",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "vite": "^6.3.2"
+  },
+  "dependencies": {
+    "three": "^0.183.2"
+  }
+}

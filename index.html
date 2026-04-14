@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Offside Simulator</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <h1>Football Offside Simulator</h1>
+      <div id="controls">
+        <div class="instructions">
+          <strong>How to use:</strong> Drag players to position them on the pitch.
+          Click an <span class="att-color">attacker</span> to select the passer,
+          then click another <span class="att-color">attacker</span> to pass to.
+        </div>
+        <div class="buttons">
+          <button id="resetBtn">Reset Positions</button>
+          <button id="clearPassBtn">Clear Pass</button>
+        </div>
+        <div id="result"></div>
+      </div>
+      <div id="pitch-container"></div>
+      <div id="legend">
+        <span class="legend-item"><span class="dot red"></span> Attackers (left to right)</span>
+        <span class="legend-item"><span class="dot blue"></span> Defenders (right to left)</span>
+        <span class="legend-item"><span class="dot yellow"></span> Goalkeepers</span>
+        <span class="legend-item"><span class="line green-line"></span> Offside line</span>
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

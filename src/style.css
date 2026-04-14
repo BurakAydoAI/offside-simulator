@@ -1,0 +1,157 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #1a1a2e;
+  color: #eee;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 1400px;
+  width: 100%;
+}
+
+h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+#controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.instructions {
+  font-size: 0.9rem;
+  color: #aaa;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.att-color {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.buttons {
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+#resetBtn {
+  background: #3498db;
+  color: white;
+}
+#resetBtn:hover {
+  background: #2980b9;
+}
+
+#clearPassBtn {
+  background: #555;
+  color: white;
+}
+#clearPassBtn:hover {
+  background: #666;
+}
+
+#result {
+  font-size: 1.2rem;
+  font-weight: 700;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 6px 20px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+#result.onside {
+  background: rgba(46, 204, 113, 0.2);
+  color: #2ecc71;
+  border: 2px solid #2ecc71;
+}
+
+#result.offside {
+  background: rgba(231, 76, 60, 0.2);
+  color: #e74c3c;
+  border: 2px solid #e74c3c;
+}
+
+#pitch-container {
+  width: 1280px;
+  height: 720px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  position: relative;
+  cursor: grab;
+}
+
+#pitch-container:active {
+  cursor: grabbing;
+}
+
+#pitch-container canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#legend {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-size: 0.85rem;
+  color: #aaa;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot.red { background: #e74c3c; }
+.dot.blue { background: #3498db; }
+.dot.yellow { background: #f1c40f; }
+
+.line {
+  width: 20px;
+  height: 3px;
+  display: inline-block;
+}
+.green-line { background: #f1c40f; }
