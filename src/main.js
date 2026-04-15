@@ -464,66 +464,71 @@ function createPassVisuals(from, to) {
 
   const group = new THREE.Group();
   const y = 1.2;
+  const PASS_COLOR = 0xf39c12;
 
-  // Dashed line
+  const dx = to.x - from.x;
+  const dz = to.z - from.z;
+  const dist = Math.sqrt(dx * dx + dz * dz);
+  const angle = Math.atan2(dz, dx);
+
+  // Dashed line from passer to receiver
   const lineGeo = new THREE.BufferGeometry().setFromPoints([
     new THREE.Vector3(from.x, y, from.z),
     new THREE.Vector3(to.x, y, to.z),
   ]);
-  const lineMat = new THREE.LineDashedMaterial({ color: 0xf39c12, dashSize: 0.6, gapSize: 0.4 });
+  const lineMat = new THREE.LineDashedMaterial({ color: PASS_COLOR, dashSize: 0.6, gapSize: 0.4 });
   const line = new THREE.Line(lineGeo, lineMat);
   line.computeLineDistances();
   group.add(line);
 
-  // Arrow head
-  const dx = to.x - from.x;
-  const dz = to.z - from.z;
-  const angle = Math.atan2(dz, dx);
-  const coneMat = new THREE.MeshBasicMaterial({ color: 0xf39c12 });
-  const cone = new THREE.Mesh(new THREE.ConeGeometry(0.35, 1.0, 8), coneMat);
+  // Chevron arrows along the line — makes direction obvious at a glance
+  const chevronMat = new THREE.MeshBasicMaterial({ color: PASS_COLOR });
+  const chevronGeo = new THREE.ConeGeometry(0.28, 0.9, 6);
+  const chevronSpacing = 3.0;
+  const numChevrons = Math.max(1, Math.floor(dist / chevronSpacing) - 1);
+  for (let i = 1; i <= numChevrons; i++) {
+    const t = i / (numChevrons + 1); // skip endpoints
+    const chevron = new THREE.Mesh(chevronGeo, chevronMat);
+    chevron.position.set(from.x + dx * t, y, from.z + dz * t);
+    chevron.rotation.order = 'YZX';
+    chevron.rotation.z = -Math.PI / 2;
+    chevron.rotation.y = -angle;
+    group.add(chevron);
+  }
+
+  // Large arrowhead at the receiver
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.4, 10), chevronMat);
   cone.position.set(to.x, y, to.z);
+  cone.rotation.order = 'YZX';
   cone.rotation.z = -Math.PI / 2;
   cone.rotation.y = -angle;
-  // Fix order: rotate around local axes
-  cone.rotation.order = 'YZX';
   group.add(cone);
 
-  // Ball at midpoint
+  // Ball at the passer's feet — "the ball starts here"
   const ballGeo = new THREE.SphereGeometry(0.35, 16, 16);
   const ballMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
   const ball = new THREE.Mesh(ballGeo, ballMat);
-  ball.position.set((from.x + to.x) / 2, y, (from.z + to.z) / 2);
+  ball.position.set(from.x, y, from.z);
   ball.castShadow = true;
   group.add(ball);
 
+  // Pedestal ring at the passer so the origin reads even at a distance
+  const pedestalGeo = new THREE.TorusGeometry(1.2, 0.12, 8, 32);
+  const pedestalMat = new THREE.MeshBasicMaterial({ color: PASS_COLOR });
+  const pedestal = new THREE.Mesh(pedestalGeo, pedestalMat);
+  pedestal.rotation.x = -Math.PI / 2;
+  pedestal.position.set(from.x, 0.06, from.z);
+  group.add(pedestal);
+
   scene.add(group);
-  passLineObj = { group, line, cone, ball };
+  passLineObj = { group };
 }
 
 function updatePassVisuals() {
   if (!passLineObj || !selectedPasser || !passTarget) return;
-  const from = selectedPasser;
-  const to = passTarget;
-  const y = 1.2;
-
-  // Update line
-  const positions = new Float32Array([from.x, y, from.z, to.x, y, to.z]);
-  passLineObj.line.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  passLineObj.line.geometry.attributes.position.needsUpdate = true;
-  passLineObj.line.computeLineDistances();
-
-  // Update arrow
-  const dx = to.x - from.x;
-  const dz = to.z - from.z;
-  const angle = Math.atan2(dz, dx);
-  passLineObj.cone.position.set(to.x, y, to.z);
-  passLineObj.cone.rotation.set(0, 0, 0);
-  passLineObj.cone.rotation.order = 'YZX';
-  passLineObj.cone.rotation.z = -Math.PI / 2;
-  passLineObj.cone.rotation.y = -angle;
-
-  // Update ball
-  passLineObj.ball.position.set((from.x + to.x) / 2, y, (from.z + to.z) / 2);
+  // Rebuild — chevron count depends on distance, so a full rebuild is simpler
+  // than tracking a variable-size array, and the scene is small enough.
+  createPassVisuals(selectedPasser, passTarget);
 }
 
 function removePassVisuals() {
