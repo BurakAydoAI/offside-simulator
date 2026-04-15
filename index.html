@@ -8,9 +8,12 @@
   </head>
   <body>
     <div id="app">
-      <h1>Football Offside Simulator</h1>
+      <div id="topbar">
+        <h1 id="appTitle">Football Offside Simulator</h1>
+        <button id="langBtn" title="Switch language">Türkçe</button>
+      </div>
       <div id="controls">
-        <div class="instructions">
+        <div class="instructions" id="instructions">
           <strong>How to use:</strong> Drag players to position them on the pitch.
           Click an <span class="att-color">attacker</span> to select the passer,
           then click another <span class="att-color">attacker</span> to pass to.
@@ -18,15 +21,27 @@
         <div class="buttons">
           <button id="resetBtn">Reset Positions</button>
           <button id="clearPassBtn">Clear Pass</button>
+          <button id="randomBtn">Random Positions &amp; Pass</button>
+          <button id="guessBtn">Guess Mode: OFF</button>
+        </div>
+        <div id="guessPanel" class="hidden">
+          <div id="guessPrompt">Set up a pass, then guess!</div>
+          <div class="buttons">
+            <button id="guessOffsideBtn" class="guess-btn offside-btn" disabled>OFFSIDE</button>
+            <button id="guessOnsideBtn" class="guess-btn onside-btn" disabled>ONSIDE</button>
+            <button id="revealBtn" disabled>Reveal</button>
+            <button id="nextBtn" class="hidden">Next Round</button>
+          </div>
+          <div id="guessScore">Score: 0 / 0</div>
         </div>
         <div id="result"></div>
       </div>
       <div id="pitch-container"></div>
       <div id="legend">
-        <span class="legend-item"><span class="dot red"></span> Attackers (left to right)</span>
-        <span class="legend-item"><span class="dot blue"></span> Defenders (right to left)</span>
-        <span class="legend-item"><span class="dot yellow"></span> Goalkeepers</span>
-        <span class="legend-item"><span class="line green-line"></span> Offside line</span>
+        <span class="legend-item"><span class="dot red"></span> <span id="legendAttackers">Attackers (left to right)</span></span>
+        <span class="legend-item"><span class="dot blue"></span> <span id="legendDefenders">Defenders (right to left)</span></span>
+        <span class="legend-item"><span class="dot yellow"></span> <span id="legendGoalkeepers">Goalkeepers</span></span>
+        <span class="legend-item"><span class="line green-line"></span> <span id="legendOffsideLine">Offside line</span></span>
       </div>
     </div>
     <script type="module" src="/src/main.js"></script>

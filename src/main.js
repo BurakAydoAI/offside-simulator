@@ -6,6 +6,83 @@ const container = document.getElementById('pitch-container');
 const resultEl = document.getElementById('result');
 const resetBtn = document.getElementById('resetBtn');
 const clearPassBtn = document.getElementById('clearPassBtn');
+const randomBtn = document.getElementById('randomBtn');
+const guessBtn = document.getElementById('guessBtn');
+const guessPanel = document.getElementById('guessPanel');
+const guessPrompt = document.getElementById('guessPrompt');
+const guessOffsideBtn = document.getElementById('guessOffsideBtn');
+const guessOnsideBtn = document.getElementById('guessOnsideBtn');
+const revealBtn = document.getElementById('revealBtn');
+const nextBtn = document.getElementById('nextBtn');
+const guessScoreEl = document.getElementById('guessScore');
+const langBtn = document.getElementById('langBtn');
+
+// ── i18n ──
+const I18N = {
+  en: {
+    title: 'Football Offside Simulator',
+    howTo: '<strong>How to use:</strong> Drag players to position them on the pitch. Click an <span class="att-color">attacker</span> to select the passer, then click another <span class="att-color">attacker</span> to pass to.',
+    resetBtn: 'Reset Positions',
+    clearPassBtn: 'Clear Pass',
+    randomBtn: 'Random Positions & Pass',
+    guessModeOn: 'Guess Mode: ON',
+    guessModeOff: 'Guess Mode: OFF',
+    offsideBtn: 'OFFSIDE',
+    onsideBtn: 'ONSIDE',
+    revealBtn: 'Reveal',
+    nextBtn: 'Next Round',
+    promptIdle: 'Set up a pass, then guess!',
+    promptRevealed: 'Revealed — set up the next pass when ready.',
+    promptLocked: (g) => `Guess locked in: ${g}. Hit Reveal when everyone has guessed.`,
+    promptReady: 'Pass is set — take your guess!',
+    score: (c, t) => `Score: ${c} / ${t}`,
+    offsideResult: 'OFFSIDE — the receiver is past the offside line.',
+    onsideResult: (reason) => `ONSIDE — ${reason}`,
+    reasonOwnHalf: 'the receiver is in their own half.',
+    reasonBallPast: 'the ball is past the offside line.',
+    reasonBehindBall: 'the receiver is behind the ball.',
+    reasonBehindLine: 'the receiver is behind the offside line.',
+    legendAttackers: 'Attackers (left to right)',
+    legendDefenders: 'Defenders (right to left)',
+    legendGoalkeepers: 'Goalkeepers',
+    legendOffsideLine: 'Offside line',
+    offsideLineLabel: 'OFFSIDE LINE',
+    langToggle: 'Türkçe',
+  },
+  tr: {
+    title: 'Futbol Ofsayt Simülatörü',
+    howTo: '<strong>Nasıl kullanılır:</strong> Oyuncuları sahada konumlandırmak için sürükleyin. Pas veren oyuncuyu seçmek için bir <span class="att-color">hücumcuya</span>, pasın gideceği oyuncuyu seçmek için başka bir <span class="att-color">hücumcuya</span> tıklayın.',
+    resetBtn: 'Konumları Sıfırla',
+    clearPassBtn: 'Pası Temizle',
+    randomBtn: 'Rastgele Konum ve Pas',
+    guessModeOn: 'Tahmin Modu: AÇIK',
+    guessModeOff: 'Tahmin Modu: KAPALI',
+    offsideBtn: 'OFSAYT',
+    onsideBtn: 'OFSAYT DEĞİL',
+    revealBtn: 'Göster',
+    nextBtn: 'Sonraki Tur',
+    promptIdle: 'Bir pas ayarlayın, sonra tahmin edin!',
+    promptRevealed: 'Gösterildi — hazır olduğunda sonraki pası ayarlayın.',
+    promptLocked: (g) => `Tahmin kaydedildi: ${g}. Herkes tahmin ettikten sonra Göster\'e basın.`,
+    promptReady: 'Pas ayarlandı — tahmininizi yapın!',
+    score: (c, t) => `Skor: ${c} / ${t}`,
+    offsideResult: 'OFSAYT — pası alan ofsayt çizgisinin önünde.',
+    onsideResult: (reason) => `OFSAYT DEĞİL — ${reason}`,
+    reasonOwnHalf: 'pası alan kendi sahasında.',
+    reasonBallPast: 'top ofsayt çizgisinin önünde.',
+    reasonBehindBall: 'pası alan topun arkasında.',
+    reasonBehindLine: 'pası alan ofsayt çizgisinin arkasında.',
+    legendAttackers: 'Hücumcular (soldan sağa)',
+    legendDefenders: 'Savunmacılar (sağdan sola)',
+    legendGoalkeepers: 'Kaleciler',
+    legendOffsideLine: 'Ofsayt çizgisi',
+    offsideLineLabel: 'OFSAYT ÇİZGİSİ',
+    langToggle: 'English',
+  },
+};
+
+let currentLang = 'en';
+function t() { return I18N[currentLang]; }
 
 // ── Constants ──
 const PITCH_LENGTH = 90;
@@ -331,27 +408,29 @@ const offsidePlane = new THREE.Mesh(offsidePlaneGeo, offsidePlaneMat);
 offsidePlane.position.y = 2;
 scene.add(offsidePlane);
 
-// Offside label
-const offsideLabel = createOffsideLabel();
+// Offside label — canvas is kept around so we can redraw on language change
+const offsideLabelCanvas = document.createElement('canvas');
+offsideLabelCanvas.width = 256;
+offsideLabelCanvas.height = 48;
+const offsideLabelTexture = new THREE.CanvasTexture(offsideLabelCanvas);
+offsideLabelTexture.minFilter = THREE.LinearFilter;
+const offsideLabel = new THREE.Sprite(
+  new THREE.SpriteMaterial({ map: offsideLabelTexture, transparent: true, depthTest: false })
+);
+offsideLabel.scale.set(8, 1.5, 1);
 scene.add(offsideLabel);
 
-function createOffsideLabel() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 48;
-  const ctx = canvas.getContext('2d');
+function redrawOffsideLabel(text) {
+  const ctx = offsideLabelCanvas.getContext('2d');
+  ctx.clearRect(0, 0, offsideLabelCanvas.width, offsideLabelCanvas.height);
   ctx.font = 'bold 28px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#f1c40f';
-  ctx.fillText('OFFSIDE LINE', 128, 24);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.minFilter = THREE.LinearFilter;
-  const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
-  const sprite = new THREE.Sprite(mat);
-  sprite.scale.set(8, 1.5, 1);
-  return sprite;
+  ctx.fillText(text, 128, 24);
+  offsideLabelTexture.needsUpdate = true;
 }
+redrawOffsideLabel('OFFSIDE LINE');
 
 function getOffsideLine() {
   const defenders = players.filter(p => p.team === 'defend');
@@ -497,30 +576,103 @@ function checkOffside() {
   return { isOffside, inOpponentHalf, aheadOfOffsideLine, aheadOfBall, ballBehindOffsideLine };
 }
 
-function showResult(result) {
+// ── Guess Mode state ──
+let guessMode = false;
+let guessRevealed = false;
+let userGuess = null; // 'offside' | 'onside' | null
+let guessScore = { correct: 0, total: 0 };
+
+function renderResult(result) {
   if (!result) {
     resultEl.textContent = '';
     resultEl.className = '';
     return;
   }
 
+  const s = t();
   if (result.isOffside) {
-    resultEl.textContent = 'OFFSIDE! The receiving player is beyond the last defender.';
+    resultEl.textContent = s.offsideResult;
     resultEl.className = 'offside';
   } else {
-    let reason = '';
-    if (!result.inOpponentHalf) {
-      reason = 'Receiver is in their own half.';
-    } else if (!result.ballBehindOffsideLine) {
-      reason = 'Ball is already past the last defender.';
-    } else if (!result.aheadOfBall) {
-      reason = 'Receiver is behind the ball.';
-    } else {
-      reason = 'Receiver is behind the offside line.';
-    }
-    resultEl.textContent = `ONSIDE! ${reason}`;
+    let reason;
+    if (!result.inOpponentHalf) reason = s.reasonOwnHalf;
+    else if (!result.ballBehindOffsideLine) reason = s.reasonBallPast;
+    else if (!result.aheadOfBall) reason = s.reasonBehindBall;
+    else reason = s.reasonBehindLine;
+    resultEl.textContent = s.onsideResult(reason);
     resultEl.className = 'onside';
   }
+}
+
+function showResult(result) {
+  if (guessMode && !guessRevealed) {
+    // Hide the answer — guess is active, waiting for a guess/reveal
+    resultEl.textContent = '';
+    resultEl.className = '';
+    updateGuessUI();
+    return;
+  }
+  renderResult(result);
+}
+
+function updateGuessUI() {
+  if (!guessMode) {
+    guessPanel.classList.add('hidden');
+    return;
+  }
+  guessPanel.classList.remove('hidden');
+
+  const hasPass = !!(selectedPasser && passTarget);
+  const canGuess = hasPass && !guessRevealed;
+
+  guessOffsideBtn.disabled = !canGuess;
+  guessOnsideBtn.disabled = !canGuess;
+  revealBtn.disabled = !hasPass || guessRevealed;
+
+  // Highlight which guess was made
+  guessOffsideBtn.classList.toggle('selected', userGuess === 'offside');
+  guessOnsideBtn.classList.toggle('selected', userGuess === 'onside');
+
+  if (guessRevealed) {
+    nextBtn.classList.remove('hidden');
+  } else {
+    nextBtn.classList.add('hidden');
+  }
+
+  const s = t();
+  if (!hasPass) {
+    guessPrompt.textContent = s.promptIdle;
+  } else if (guessRevealed) {
+    guessPrompt.textContent = s.promptRevealed;
+  } else if (userGuess) {
+    const label = userGuess === 'offside' ? s.offsideBtn : s.onsideBtn;
+    guessPrompt.textContent = s.promptLocked(label);
+  } else {
+    guessPrompt.textContent = s.promptReady;
+  }
+
+  guessScoreEl.textContent = s.score(guessScore.correct, guessScore.total);
+}
+
+function reveal() {
+  const result = checkOffside();
+  if (!result) return;
+  guessRevealed = true;
+
+  if (userGuess !== null) {
+    const actual = result.isOffside ? 'offside' : 'onside';
+    guessScore.total += 1;
+    if (userGuess === actual) guessScore.correct += 1;
+  }
+
+  renderResult(result);
+  updateGuessUI();
+}
+
+function resetGuessRound() {
+  guessRevealed = false;
+  userGuess = null;
+  updateGuessUI();
 }
 
 // ── Interaction ──
@@ -631,6 +783,7 @@ resetBtn.addEventListener('click', () => {
   buildAllPlayers();
   selectedPasser = null;
   passTarget = null;
+  resetGuessRound();
   showResult(null);
   updateOffsideLine();
 });
@@ -639,9 +792,185 @@ clearPassBtn.addEventListener('click', () => {
   selectedPasser = null;
   passTarget = null;
   removePassVisuals();
+  resetGuessRound();
   showResult(null);
   updateSelectionRings();
 });
+
+guessBtn.addEventListener('click', () => {
+  guessMode = !guessMode;
+  const s = t();
+  guessBtn.textContent = guessMode ? s.guessModeOn : s.guessModeOff;
+  guessBtn.classList.toggle('active', guessMode);
+  resetGuessRound();
+  // Re-render the result using the new visibility rules
+  showResult(checkOffside());
+});
+
+// ── Random scenario ──
+function randRange(min, max) {
+  return min + Math.random() * (max - min);
+}
+
+function pickScenario() {
+  // Weighted scenario archetypes — aim for a balanced mix of offside and onside outcomes
+  const r = Math.random();
+  if (r < 0.35) {
+    // High defensive line — offside line sits near halfway
+    return { defCenter: randRange(8, 18), defSpread: 5, attForwardBias: 0.5 };
+  } else if (r < 0.7) {
+    // Medium line
+    return { defCenter: randRange(16, 26), defSpread: 7, attForwardBias: 0.45 };
+  } else {
+    // Deep defensive block
+    return { defCenter: randRange(24, 34), defSpread: 8, attForwardBias: 0.35 };
+  }
+}
+
+function randomizePositions() {
+  const scenario = pickScenario();
+
+  // Place defenders and GKs first so the offside line is known
+  players.forEach(p => {
+    if (p.role === 'gk') {
+      p.x = p.team === 'attack' ? -HALF_L + 3 : HALF_L - 3;
+      p.z = randRange(-3, 3);
+    } else if (p.team === 'defend') {
+      p.x = randRange(
+        Math.max(2, scenario.defCenter - scenario.defSpread),
+        Math.min(HALF_L - 4, scenario.defCenter + scenario.defSpread)
+      );
+      p.z = randRange(-HALF_W + 2, HALF_W - 2);
+    }
+  });
+
+  // Now place attackers relative to the offside line
+  const offsideX = getOffsideLine();
+  const attackers = players.filter(p => p.team === 'attack' && p.role !== 'gk');
+  attackers.forEach(p => {
+    const ahead = Math.random() < scenario.attForwardBias;
+    if (ahead) {
+      // In front of the offside line (potentially offside position)
+      p.x = randRange(Math.max(offsideX + 0.5, 1), HALF_L - 5);
+    } else {
+      // Behind the offside line — legal starting point
+      p.x = randRange(-HALF_L + 12, Math.max(offsideX - 1, -HALF_L + 13));
+    }
+    p.z = randRange(-HALF_W + 2, HALF_W - 2);
+  });
+
+  syncMeshPositions();
+  updateOffsideLine();
+}
+
+function randomPass() {
+  const attackers = players.filter(p => p.team === 'attack' && p.role !== 'gk');
+  if (attackers.length < 2) return;
+
+  const rnd = (n) => Math.floor(Math.random() * n);
+  const pickDifferent = (arr, not) => {
+    let t;
+    do { t = arr[rnd(arr.length)]; } while (t === not);
+    return t;
+  };
+
+  const offsideX = getOffsideLine();
+  const behindLine = attackers.filter(p => p.x <= offsideX);
+  const aheadOfLine = attackers.filter(p => p.x > offsideX);
+
+  // Pick a pass archetype. Weights are tuned for roughly balanced offside/onside.
+  const r = Math.random();
+  let passer = null, target = null;
+
+  if (r < 0.35 && behindLine.length >= 1 && aheadOfLine.length >= 1) {
+    // Classic through-ball: passer behind line, target ahead — often offside.
+    passer = behindLine[rnd(behindLine.length)];
+    target = aheadOfLine[rnd(aheadOfLine.length)];
+  } else if (r < 0.55 && aheadOfLine.length >= 2) {
+    // Ball already past the defense: passer ahead of line → "ballBehindOffsideLine" fails → always ONSIDE.
+    passer = aheadOfLine[rnd(aheadOfLine.length)];
+    target = pickDifferent(aheadOfLine, passer);
+  } else if (r < 0.75) {
+    // Backward / sideways pass: target at or behind passer → "aheadOfBall" fails → ONSIDE.
+    passer = attackers[rnd(attackers.length)];
+    const candidates = attackers.filter(a => a !== passer && a.x <= passer.x + 0.5);
+    if (candidates.length > 0) {
+      target = candidates[rnd(candidates.length)];
+    }
+  }
+
+  // Fallback — any two different attackers (mixed outcomes)
+  if (!passer || !target) {
+    passer = attackers[rnd(attackers.length)];
+    target = pickDifferent(attackers, passer);
+  }
+
+  selectedPasser = passer;
+  passTarget = target;
+  createPassVisuals(selectedPasser, passTarget);
+  updateSelectionRings();
+}
+
+randomBtn.addEventListener('click', () => {
+  randomizePositions();
+  randomPass();
+  resetGuessRound();
+  showResult(checkOffside());
+});
+
+function makeGuess(guess) {
+  if (!selectedPasser || !passTarget || guessRevealed) return;
+  userGuess = guess;
+  updateGuessUI();
+}
+
+guessOffsideBtn.addEventListener('click', () => makeGuess('offside'));
+guessOnsideBtn.addEventListener('click', () => makeGuess('onside'));
+revealBtn.addEventListener('click', () => reveal());
+nextBtn.addEventListener('click', () => {
+  selectedPasser = null;
+  passTarget = null;
+  removePassVisuals();
+  resetGuessRound();
+  showResult(null);
+  updateSelectionRings();
+});
+
+// ── Language toggle ──
+function applyLang() {
+  const s = t();
+  document.title = s.title;
+  document.documentElement.lang = currentLang;
+  document.getElementById('appTitle').textContent = s.title;
+  document.getElementById('instructions').innerHTML = s.howTo;
+  resetBtn.textContent = s.resetBtn;
+  clearPassBtn.textContent = s.clearPassBtn;
+  randomBtn.textContent = s.randomBtn;
+  guessBtn.textContent = guessMode ? s.guessModeOn : s.guessModeOff;
+  guessOffsideBtn.textContent = s.offsideBtn;
+  guessOnsideBtn.textContent = s.onsideBtn;
+  revealBtn.textContent = s.revealBtn;
+  nextBtn.textContent = s.nextBtn;
+  langBtn.textContent = s.langToggle;
+  document.getElementById('legendAttackers').textContent = s.legendAttackers;
+  document.getElementById('legendDefenders').textContent = s.legendDefenders;
+  document.getElementById('legendGoalkeepers').textContent = s.legendGoalkeepers;
+  document.getElementById('legendOffsideLine').textContent = s.legendOffsideLine;
+
+  redrawOffsideLabel(s.offsideLineLabel);
+  updateGuessUI();
+  // Re-render the result banner if it's currently visible
+  if (resultEl.textContent) {
+    renderResult(checkOffside());
+  }
+}
+
+langBtn.addEventListener('click', () => {
+  currentLang = currentLang === 'en' ? 'tr' : 'en';
+  applyLang();
+});
+
+applyLang();
 
 // ── Resize ──
 window.addEventListener('resize', () => {

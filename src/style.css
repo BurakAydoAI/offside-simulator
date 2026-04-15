@@ -23,10 +23,32 @@ body {
   width: 100%;
 }
 
+#topbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  position: relative;
+}
+
 h1 {
   font-size: 1.6rem;
   font-weight: 700;
   letter-spacing: -0.5px;
+}
+
+#langBtn {
+  position: absolute;
+  right: 0;
+  background: #2c3e50;
+  color: #ecf0f1;
+  border: 1px solid #455a72;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+}
+#langBtn:hover {
+  background: #34495e;
 }
 
 #controls {
@@ -78,6 +100,109 @@ button {
 }
 #clearPassBtn:hover {
   background: #666;
+}
+
+#randomBtn {
+  background: #16a085;
+  color: white;
+}
+#randomBtn:hover {
+  background: #1abc9c;
+}
+
+#guessBtn {
+  background: #8e44ad;
+  color: white;
+}
+#guessBtn:hover {
+  background: #9b59b6;
+}
+#guessBtn.active {
+  background: #f39c12;
+  color: #1a1a2e;
+}
+#guessBtn.active:hover {
+  background: #e67e22;
+}
+
+.hidden {
+  display: none !important;
+}
+
+#guessPanel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: rgba(142, 68, 173, 0.12);
+  border: 1px solid rgba(142, 68, 173, 0.4);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 720px;
+}
+
+#guessPrompt {
+  font-size: 1rem;
+  color: #ddd;
+  text-align: center;
+}
+
+#guessScore {
+  font-size: 0.9rem;
+  color: #f1c40f;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.guess-btn {
+  min-width: 110px;
+  color: white;
+}
+
+.guess-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.offside-btn {
+  background: #c0392b;
+}
+.offside-btn:hover:not(:disabled) {
+  background: #e74c3c;
+}
+
+.onside-btn {
+  background: #27ae60;
+}
+.onside-btn:hover:not(:disabled) {
+  background: #2ecc71;
+}
+
+.guess-btn.selected {
+  outline: 3px solid #f1c40f;
+  outline-offset: 2px;
+  transform: scale(1.05);
+}
+
+#revealBtn {
+  background: #f1c40f;
+  color: #1a1a2e;
+}
+#revealBtn:hover:not(:disabled) {
+  background: #f39c12;
+}
+#revealBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+#nextBtn {
+  background: #3498db;
+  color: white;
+}
+#nextBtn:hover {
+  background: #2980b9;
 }
 
 #result {
