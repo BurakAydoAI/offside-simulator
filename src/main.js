@@ -16,6 +16,7 @@ const revealBtn = document.getElementById('revealBtn');
 const nextBtn = document.getElementById('nextBtn');
 const guessScoreEl = document.getElementById('guessScore');
 const langBtn = document.getElementById('langBtn');
+const lineToggleBtn = document.getElementById('lineToggleBtn');
 
 // ── i18n ──
 const I18N = {
@@ -47,6 +48,8 @@ const I18N = {
     legendGoalkeepers: 'Goalkeepers',
     legendOffsideLine: 'Offside line',
     offsideLineLabel: 'OFFSIDE LINE',
+    lineOn: 'Offside Line: ON',
+    lineOff: 'Offside Line: OFF',
     langToggle: 'Türkçe',
   },
   tr: {
@@ -77,6 +80,8 @@ const I18N = {
     legendGoalkeepers: 'Kaleciler',
     legendOffsideLine: 'Ofsayt çizgisi',
     offsideLineLabel: 'OFSAYT ÇİZGİSİ',
+    lineOn: 'Ofsayt Çizgisi: AÇIK',
+    lineOff: 'Ofsayt Çizgisi: KAPALI',
     langToggle: 'English',
   },
 };
@@ -262,20 +267,37 @@ buildPitch();
 // ── Players ──
 function createDefaultPlayers() {
   return [
-    // Attacking team (red) - attacking towards +X
+    // Attacking team (red) — 4-4-2 attacking towards +X
     { id: 'A-GK', x: -42, z: 0, team: 'attack', role: 'gk', label: 'GK' },
-    { id: 'A1', x: -23, z: -14, team: 'attack', role: 'player', label: 'A1' },
-    { id: 'A2', x: -18, z: 0, team: 'attack', role: 'player', label: 'A2' },
-    { id: 'A3', x: -23, z: 14, team: 'attack', role: 'player', label: 'A3' },
-    { id: 'A4', x: 2, z: -8, team: 'attack', role: 'player', label: 'A4' },
-    { id: 'A5', x: 2, z: 8, team: 'attack', role: 'player', label: 'A5' },
+    // Defenders
+    { id: 'A1', x: -28, z: -20, team: 'attack', role: 'player', label: 'A1' },
+    { id: 'A2', x: -28, z: -7, team: 'attack', role: 'player', label: 'A2' },
+    { id: 'A3', x: -28, z: 7, team: 'attack', role: 'player', label: 'A3' },
+    { id: 'A4', x: -28, z: 20, team: 'attack', role: 'player', label: 'A4' },
+    // Midfielders
+    { id: 'A5', x: -10, z: -18, team: 'attack', role: 'player', label: 'A5' },
+    { id: 'A6', x: -10, z: -6, team: 'attack', role: 'player', label: 'A6' },
+    { id: 'A7', x: -10, z: 6, team: 'attack', role: 'player', label: 'A7' },
+    { id: 'A8', x: -10, z: 18, team: 'attack', role: 'player', label: 'A8' },
+    // Forwards
+    { id: 'A9', x: 5, z: -6, team: 'attack', role: 'player', label: 'A9' },
+    { id: 'A10', x: 5, z: 6, team: 'attack', role: 'player', label: 'A10' },
 
-    // Defending team (blue) - defending the +X goal
+    // Defending team (blue) — 4-4-2 defending the +X goal
     { id: 'D-GK', x: 42, z: 0, team: 'defend', role: 'gk', label: 'GK' },
-    { id: 'D1', x: 27, z: -16, team: 'defend', role: 'player', label: 'D1' },
-    { id: 'D2', x: 24, z: -2, team: 'defend', role: 'player', label: 'D2' },
-    { id: 'D3', x: 24, z: 12, team: 'defend', role: 'player', label: 'D3' },
-    { id: 'D4', x: 12, z: 0, team: 'defend', role: 'player', label: 'D4' },
+    // Back line
+    { id: 'D1', x: 27, z: -18, team: 'defend', role: 'player', label: 'D1' },
+    { id: 'D2', x: 26, z: -6, team: 'defend', role: 'player', label: 'D2' },
+    { id: 'D3', x: 26, z: 6, team: 'defend', role: 'player', label: 'D3' },
+    { id: 'D4', x: 27, z: 18, team: 'defend', role: 'player', label: 'D4' },
+    // Midfielders
+    { id: 'D5', x: 14, z: -18, team: 'defend', role: 'player', label: 'D5' },
+    { id: 'D6', x: 12, z: -6, team: 'defend', role: 'player', label: 'D6' },
+    { id: 'D7', x: 12, z: 6, team: 'defend', role: 'player', label: 'D7' },
+    { id: 'D8', x: 14, z: 18, team: 'defend', role: 'player', label: 'D8' },
+    // Forwards
+    { id: 'D9', x: 2, z: -6, team: 'defend', role: 'player', label: 'D9' },
+    { id: 'D10', x: 2, z: 6, team: 'defend', role: 'player', label: 'D10' },
   ];
 }
 
@@ -284,9 +306,10 @@ const playerMeshes = new Map(); // id -> { group, body, ring, label }
 const draggableBodies = []; // array of body meshes for raycasting
 
 function getPlayerColor(p) {
-  if (p.role === 'gk') return 0xf1c40f;
-  if (p.team === 'attack') return 0xe74c3c;
-  return 0x3498db;
+  if (p.team === 'attack') {
+    return p.role === 'gk' ? 0xf5b7b1 : 0xe74c3c; // lighter red for GK
+  }
+  return p.role === 'gk' ? 0x85c1e9 : 0x3498db; // lighter blue for GK
 }
 
 function createLabelSprite(text, color) {
@@ -331,6 +354,14 @@ function buildPlayerMesh(p) {
   body.userData.playerId = p.id;
   group.add(body);
 
+  // Invisible hitbox — larger than the visual body for easier picking
+  const hitGeo = new THREE.CylinderGeometry(PLAYER_RADIUS * 2.5, PLAYER_RADIUS * 2.5, PLAYER_BODY_HEIGHT + PLAYER_RADIUS * 2, 8);
+  const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+  const hitbox = new THREE.Mesh(hitGeo, hitMat);
+  hitbox.position.y = PLAYER_RADIUS + PLAYER_BODY_HEIGHT / 2;
+  hitbox.userData.playerId = p.id;
+  group.add(hitbox);
+
   // Selection ring (hidden by default)
   const ringGeo = new THREE.TorusGeometry(0.9, 0.08, 8, 32);
   const ringMat = new THREE.MeshBasicMaterial({ color: 0xf39c12 });
@@ -348,9 +379,9 @@ function buildPlayerMesh(p) {
   group.position.set(p.x, 0, p.z);
   scene.add(group);
 
-  const entry = { group, body, ring, label, data: p };
+  const entry = { group, body, hitbox, ring, label, data: p };
   playerMeshes.set(p.id, entry);
-  draggableBodies.push(body);
+  draggableBodies.push(hitbox);
 
   return entry;
 }
@@ -371,6 +402,8 @@ function removeAllPlayerMeshes() {
     scene.remove(entry.group);
     entry.body.geometry.dispose();
     entry.body.material.dispose();
+    entry.hitbox.geometry.dispose();
+    entry.hitbox.material.dispose();
     entry.ring.geometry.dispose();
     entry.ring.material.dispose();
     entry.label.material.map.dispose();
@@ -579,6 +612,15 @@ function checkOffside() {
   const isOffside = inOpponentHalf && aheadOfOffsideLine && aheadOfBall && ballBehindOffsideLine;
 
   return { isOffside, inOpponentHalf, aheadOfOffsideLine, aheadOfBall, ballBehindOffsideLine };
+}
+
+// ── Offside line visibility ──
+let showOffsideLineFlag = true;
+
+function setOffsideLineVisible(visible) {
+  offsideLine.visible = visible;
+  offsidePlane.visible = visible;
+  offsideLabel.visible = visible;
 }
 
 // ── Guess Mode state ──
@@ -812,56 +854,126 @@ guessBtn.addEventListener('click', () => {
   showResult(checkOffside());
 });
 
+lineToggleBtn.addEventListener('click', () => {
+  showOffsideLineFlag = !showOffsideLineFlag;
+  const s = t();
+  lineToggleBtn.textContent = showOffsideLineFlag ? s.lineOn : s.lineOff;
+  lineToggleBtn.classList.toggle('active', !showOffsideLineFlag);
+  setOffsideLineVisible(showOffsideLineFlag);
+});
+
 // ── Random scenario ──
 function randRange(min, max) {
   return min + Math.random() * (max - min);
 }
 
-function pickScenario() {
-  // Weighted scenario archetypes — aim for a balanced mix of offside and onside outcomes
-  const r = Math.random();
-  if (r < 0.35) {
-    // High defensive line — offside line sits near halfway
-    return { defCenter: randRange(8, 18), defSpread: 5, attForwardBias: 0.5 };
-  } else if (r < 0.7) {
-    // Medium line
-    return { defCenter: randRange(16, 26), defSpread: 7, attForwardBias: 0.45 };
-  } else {
-    // Deep defensive block
-    return { defCenter: randRange(24, 34), defSpread: 8, attForwardBias: 0.35 };
+// Distribute N players across the pitch width with some jitter
+function spreadAcrossWidth(n, zJitter) {
+  const positions = [];
+  const usable = PITCH_WIDTH - 8; // margin from edges
+  const gap = usable / (n + 1);
+  for (let i = 1; i <= n; i++) {
+    positions.push(-HALF_W + 4 + gap * i + randRange(-zJitter, zJitter));
   }
+  return positions;
 }
 
 function randomizePositions() {
-  const scenario = pickScenario();
+  // Choose a defensive line height — this controls the game shape
+  const r = Math.random();
+  let defLineX, defMidX, defFwdX;
+  let attDefX, attMidX, attFwdX;
 
-  // Place defenders and GKs first so the offside line is known
+  if (r < 0.35) {
+    // High press — compact, both teams pushed forward
+    defLineX = randRange(8, 16);
+    defMidX = defLineX - randRange(8, 14);
+    defFwdX = defMidX - randRange(8, 14);
+    attDefX = randRange(-30, -22);
+    attMidX = randRange(-14, -4);
+    attFwdX = randRange(defLineX - 8, defLineX + 6);
+  } else if (r < 0.7) {
+    // Medium block
+    defLineX = randRange(16, 26);
+    defMidX = defLineX - randRange(10, 16);
+    defFwdX = defMidX - randRange(8, 14);
+    attDefX = randRange(-32, -20);
+    attMidX = randRange(-12, 0);
+    attFwdX = randRange(defLineX - 10, defLineX + 4);
+  } else {
+    // Deep block — defenders near own box
+    defLineX = randRange(26, 36);
+    defMidX = defLineX - randRange(12, 18);
+    defFwdX = defMidX - randRange(10, 16);
+    attDefX = randRange(-28, -16);
+    attMidX = randRange(-8, 6);
+    attFwdX = randRange(defLineX - 12, defLineX + 2);
+  }
+
+  const xJitter = 2.5; // per-player random offset in X
+  const zJitter = 3;   // per-player random offset in Z
+
+  // ── Defending team (blue) — 4-4-2 shape ──
+  const defOutfield = players.filter(p => p.team === 'defend' && p.role !== 'gk');
+  const defBack = defOutfield.slice(0, 4);
+  const defMid = defOutfield.slice(4, 8);
+  const defFwd = defOutfield.slice(8, 10);
+
+  const defBackZ = spreadAcrossWidth(4, zJitter);
+  defBack.forEach((p, i) => {
+    p.x = defLineX + randRange(-xJitter, xJitter);
+    p.z = defBackZ[i];
+  });
+
+  const defMidZ = spreadAcrossWidth(4, zJitter);
+  defMid.forEach((p, i) => {
+    p.x = defMidX + randRange(-xJitter, xJitter);
+    p.z = defMidZ[i];
+  });
+
+  const defFwdZ = spreadAcrossWidth(2, zJitter + 2);
+  defFwd.forEach((p, i) => {
+    p.x = defFwdX + randRange(-xJitter, xJitter);
+    p.z = defFwdZ[i];
+  });
+
+  // ── Attacking team (red) — 4-4-2 shape ──
+  const attOutfield = players.filter(p => p.team === 'attack' && p.role !== 'gk');
+  const attBack = attOutfield.slice(0, 4);
+  const attMid = attOutfield.slice(4, 8);
+  const attFwd = attOutfield.slice(8, 10);
+
+  const attBackZ = spreadAcrossWidth(4, zJitter);
+  attBack.forEach((p, i) => {
+    p.x = attDefX + randRange(-xJitter, xJitter);
+    p.z = attBackZ[i];
+  });
+
+  const attMidZ = spreadAcrossWidth(4, zJitter);
+  attMid.forEach((p, i) => {
+    p.x = attMidX + randRange(-xJitter, xJitter);
+    p.z = attMidZ[i];
+  });
+
+  // Forwards — some ahead of offside line, some behind, for interesting scenarios
+  const offsideX = getOffsideLine();
+  const attFwdZ = spreadAcrossWidth(2, zJitter + 2);
+  attFwd.forEach((p, i) => {
+    const pushAhead = Math.random() < 0.5;
+    if (pushAhead) {
+      p.x = randRange(Math.max(offsideX + 0.5, 1), Math.min(offsideX + 8, HALF_L - 5));
+    } else {
+      p.x = attFwdX + randRange(-xJitter, xJitter);
+    }
+    p.z = attFwdZ[i];
+  });
+
+  // GKs
   players.forEach(p => {
     if (p.role === 'gk') {
       p.x = p.team === 'attack' ? -HALF_L + 3 : HALF_L - 3;
       p.z = randRange(-3, 3);
-    } else if (p.team === 'defend') {
-      p.x = randRange(
-        Math.max(2, scenario.defCenter - scenario.defSpread),
-        Math.min(HALF_L - 4, scenario.defCenter + scenario.defSpread)
-      );
-      p.z = randRange(-HALF_W + 2, HALF_W - 2);
     }
-  });
-
-  // Now place attackers relative to the offside line
-  const offsideX = getOffsideLine();
-  const attackers = players.filter(p => p.team === 'attack' && p.role !== 'gk');
-  attackers.forEach(p => {
-    const ahead = Math.random() < scenario.attForwardBias;
-    if (ahead) {
-      // In front of the offside line (potentially offside position)
-      p.x = randRange(Math.max(offsideX + 0.5, 1), HALF_L - 5);
-    } else {
-      // Behind the offside line — legal starting point
-      p.x = randRange(-HALF_L + 12, Math.max(offsideX - 1, -HALF_L + 13));
-    }
-    p.z = randRange(-HALF_W + 2, HALF_W - 2);
   });
 
   syncMeshPositions();
@@ -873,41 +985,43 @@ function randomPass() {
   if (attackers.length < 2) return;
 
   const rnd = (n) => Math.floor(Math.random() * n);
-  const pickDifferent = (arr, not) => {
-    let t;
-    do { t = arr[rnd(arr.length)]; } while (t === not);
-    return t;
-  };
 
   const offsideX = getOffsideLine();
   const behindLine = attackers.filter(p => p.x <= offsideX);
   const aheadOfLine = attackers.filter(p => p.x > offsideX);
 
-  // Pick a pass archetype. Weights are tuned for roughly balanced offside/onside.
+  // Pick a forward-pass archetype. Weights tuned for balanced offside/onside.
   const r = Math.random();
   let passer = null, target = null;
 
-  if (r < 0.35 && behindLine.length >= 1 && aheadOfLine.length >= 1) {
+  if (r < 0.45 && behindLine.length >= 1 && aheadOfLine.length >= 1) {
     // Classic through-ball: passer behind line, target ahead — often offside.
     passer = behindLine[rnd(behindLine.length)];
     target = aheadOfLine[rnd(aheadOfLine.length)];
-  } else if (r < 0.55 && aheadOfLine.length >= 2) {
-    // Ball already past the defense: passer ahead of line → "ballBehindOffsideLine" fails → always ONSIDE.
-    passer = aheadOfLine[rnd(aheadOfLine.length)];
-    target = pickDifferent(aheadOfLine, passer);
-  } else if (r < 0.75) {
-    // Backward / sideways pass: target at or behind passer → "aheadOfBall" fails → ONSIDE.
-    passer = attackers[rnd(attackers.length)];
-    const candidates = attackers.filter(a => a !== passer && a.x <= passer.x + 0.5);
-    if (candidates.length > 0) {
-      target = candidates[rnd(candidates.length)];
-    }
+  } else if (r < 0.65 && aheadOfLine.length >= 2) {
+    // Ball already past the defense: both ahead of line — ONSIDE.
+    const sorted = [...aheadOfLine].sort((a, b) => a.x - b.x);
+    passer = sorted[0]; // pick the one further back as passer
+    const forwardCandidates = sorted.filter(a => a.x > passer.x);
+    target = forwardCandidates.length > 0
+      ? forwardCandidates[rnd(forwardCandidates.length)]
+      : sorted[sorted.length - 1];
   }
 
-  // Fallback — any two different attackers (mixed outcomes)
-  if (!passer || !target) {
-    passer = attackers[rnd(attackers.length)];
-    target = pickDifferent(attackers, passer);
+  // Fallback — pick any two attackers ensuring a forward pass
+  if (!passer || !target || passer === target) {
+    const sorted = [...attackers].sort((a, b) => a.x - b.x);
+    // Pick passer from the back half, target from those ahead of passer
+    const passerIdx = rnd(Math.max(1, sorted.length - 1));
+    passer = sorted[passerIdx];
+    const forwardCandidates = sorted.filter(a => a.x > passer.x);
+    if (forwardCandidates.length > 0) {
+      target = forwardCandidates[rnd(forwardCandidates.length)];
+    } else {
+      // All at same X — just pick two different ones
+      passer = sorted[0];
+      target = sorted[sorted.length - 1];
+    }
   }
 
   selectedPasser = passer;
@@ -956,6 +1070,7 @@ function applyLang() {
   guessOnsideBtn.textContent = s.onsideBtn;
   revealBtn.textContent = s.revealBtn;
   nextBtn.textContent = s.nextBtn;
+  lineToggleBtn.textContent = showOffsideLineFlag ? s.lineOn : s.lineOff;
   langBtn.textContent = s.langToggle;
   document.getElementById('legendAttackers').textContent = s.legendAttackers;
   document.getElementById('legendDefenders').textContent = s.legendDefenders;

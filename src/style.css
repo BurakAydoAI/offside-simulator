@@ -125,6 +125,20 @@ button {
   background: #e67e22;
 }
 
+#lineToggleBtn {
+  background: #2c3e50;
+  color: #f1c40f;
+  border: 1px solid #f1c40f55;
+}
+#lineToggleBtn:hover {
+  background: #34495e;
+}
+#lineToggleBtn.active {
+  background: #555;
+  color: #aaa;
+  border: 1px solid #666;
+}
+
 .hidden {
   display: none !important;
 }
@@ -272,7 +286,8 @@ button {
 
 .dot.red { background: #e74c3c; }
 .dot.blue { background: #3498db; }
-.dot.yellow { background: #f1c40f; }
+.dot.light-red { background: #f5b7b1; }
+.dot.light-blue { background: #85c1e9; }
 
 .line {
   width: 20px;
