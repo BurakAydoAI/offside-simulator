@@ -930,96 +930,85 @@ function spreadAcrossWidth(n, zJitter) {
 }
 
 function randomizePositions() {
-  // Choose a defensive line height — this controls the game shape
+  // ── 1. Pick defensive line height ──
   const r = Math.random();
-  let defLineX, defMidX, defFwdX;
-  let attDefX, attMidX, attFwdX;
+  let defLineX;
+  if (r < 0.35)      defLineX = randRange(8, 16);   // high press
+  else if (r < 0.7)  defLineX = randRange(16, 26);  // medium block
+  else                defLineX = randRange(26, 36);  // deep block
 
-  if (r < 0.35) {
-    // High press — compact, both teams pushed forward
-    defLineX = randRange(8, 16);
-    defMidX = defLineX - randRange(8, 14);
-    defFwdX = defMidX - randRange(8, 14);
-    attDefX = randRange(-30, -22);
-    attMidX = randRange(-14, -4);
-    attFwdX = randRange(defLineX - 8, defLineX + 6);
-  } else if (r < 0.7) {
-    // Medium block
-    defLineX = randRange(16, 26);
-    defMidX = defLineX - randRange(10, 16);
-    defFwdX = defMidX - randRange(8, 14);
-    attDefX = randRange(-32, -20);
-    attMidX = randRange(-12, 0);
-    attFwdX = randRange(defLineX - 10, defLineX + 4);
-  } else {
-    // Deep block — defenders near own box
-    defLineX = randRange(26, 36);
-    defMidX = defLineX - randRange(12, 18);
-    defFwdX = defMidX - randRange(10, 16);
-    attDefX = randRange(-28, -16);
-    attMidX = randRange(-8, 6);
-    attFwdX = randRange(defLineX - 12, defLineX + 2);
-  }
-
-  const xJitter = 2.5; // per-player random offset in X
-  const zJitter = 3;   // per-player random offset in Z
-
-  // ── Defending team (blue) — 4-4-2 shape ──
+  // ── 2. Defending back 4 — tight line ──
   const defOutfield = players.filter(p => p.team === 'defend' && p.role !== 'gk');
   const defBack = defOutfield.slice(0, 4);
   const defMid = defOutfield.slice(4, 8);
   const defFwd = defOutfield.slice(8, 10);
 
-  const defBackZ = spreadAcrossWidth(4, zJitter);
+  const defBackZ = spreadAcrossWidth(4, 2);
   defBack.forEach((p, i) => {
-    p.x = defLineX + randRange(-xJitter, xJitter);
+    p.x = defLineX + randRange(-1.5, 1.5);
     p.z = defBackZ[i];
   });
 
-  const defMidZ = spreadAcrossWidth(4, zJitter);
-  defMid.forEach((p, i) => {
-    p.x = defMidX + randRange(-xJitter, xJitter);
-    p.z = defMidZ[i];
-  });
-
-  const defFwdZ = spreadAcrossWidth(2, zJitter + 2);
-  defFwd.forEach((p, i) => {
-    p.x = defFwdX + randRange(-xJitter, xJitter);
-    p.z = defFwdZ[i];
-  });
-
-  // ── Attacking team (red) — 4-4-2 shape ──
+  // ── 3. Attacking team — position then man-mark ──
   const attOutfield = players.filter(p => p.team === 'attack' && p.role !== 'gk');
   const attBack = attOutfield.slice(0, 4);
   const attMid = attOutfield.slice(4, 8);
   const attFwd = attOutfield.slice(8, 10);
 
-  const attBackZ = spreadAcrossWidth(4, zJitter);
+  // Attacking back 4 — deep in own half
+  const attDefX = randRange(-HALF_L + 10, -14);
+  const attBackZ = spreadAcrossWidth(4, 2.5);
   attBack.forEach((p, i) => {
-    p.x = attDefX + randRange(-xJitter, xJitter);
+    p.x = attDefX + randRange(-2, 2);
     p.z = attBackZ[i];
   });
 
-  const attMidZ = spreadAcrossWidth(4, zJitter);
+  // Attacking midfield 4 — between own back line and the defensive line
+  const attMidX = randRange(attDefX + 10, defLineX - 8);
+  const attMidZ = spreadAcrossWidth(4, 3);
   attMid.forEach((p, i) => {
-    p.x = attMidX + randRange(-xJitter, xJitter);
+    p.x = attMidX + randRange(-3, 3);
     p.z = attMidZ[i];
   });
 
-  // Forwards — some ahead of offside line, some behind, for interesting scenarios
+  // Defending midfield 4 — man-mark the attacking midfielders
+  defMid.forEach((p, i) => {
+    const shadow = attMid[i];
+    p.x = shadow.x + randRange(1, 4);  // slightly goal-side of attacker
+    p.z = shadow.z + randRange(-2, 2);
+  });
+
+  // Defending forwards 2 — press the attacking back line / midfield
+  defFwd.forEach((p, i) => {
+    const shadow = attMid[i]; // shadow the central mids
+    p.x = shadow.x + randRange(-5, -1); // ahead of them, pressing
+    p.z = shadow.z + randRange(-3, 3);
+  });
+
+  // ── 4. Attacking forwards — TIGHT to offside line (controversial) ──
   const offsideX = getOffsideLine();
-  const attFwdZ = spreadAcrossWidth(2, zJitter + 2);
+  const attFwdZ = spreadAcrossWidth(2, 4);
   attFwd.forEach((p, i) => {
-    const pushAhead = Math.random() < 0.5;
-    if (pushAhead) {
-      p.x = randRange(Math.max(offsideX + 0.5, 1), Math.min(offsideX + 8, HALF_L - 5));
+    // Tight range around the offside line: -2.5 to +2.5
+    // This creates genuinely controversial calls
+    const tightness = Math.random();
+    if (tightness < 0.4) {
+      // Super tight — within ±1 unit (hardest to call)
+      p.x = offsideX + randRange(-1, 1.5);
+    } else if (tightness < 0.75) {
+      // Close — within ±2.5 units (tricky)
+      p.x = offsideX + randRange(-2.5, 3);
     } else {
-      p.x = attFwdX + randRange(-xJitter, xJitter);
+      // Wider — clearly onside or offside for variety
+      const ahead = Math.random() < 0.5;
+      p.x = ahead
+        ? randRange(offsideX + 3, Math.min(offsideX + 7, HALF_L - 5))
+        : randRange(Math.max(offsideX - 8, attMidX), offsideX - 2);
     }
     p.z = attFwdZ[i];
   });
 
-  // GKs
+  // ── 5. GKs ──
   players.forEach(p => {
     if (p.role === 'gk') {
       p.x = p.team === 'attack' ? -HALF_L + 3 : HALF_L - 3;
@@ -1036,43 +1025,38 @@ function randomPass() {
   if (attackers.length < 2) return;
 
   const rnd = (n) => Math.floor(Math.random() * n);
-
   const offsideX = getOffsideLine();
-  const behindLine = attackers.filter(p => p.x <= offsideX);
-  const aheadOfLine = attackers.filter(p => p.x > offsideX);
 
-  // Pick a forward-pass archetype. Weights tuned for balanced offside/onside.
-  const r = Math.random();
+  // Separate into midfielders (A5-A8, behind the line) and forwards (A9-A10, near the line)
+  const mids = attackers.filter(p => p.x < offsideX - 3);
+  const forwards = attackers.filter(p => p.x >= offsideX - 3);
+
   let passer = null, target = null;
+  const r = Math.random();
 
-  if (r < 0.45 && behindLine.length >= 1 && aheadOfLine.length >= 1) {
-    // Classic through-ball: passer behind line, target ahead — often offside.
-    passer = behindLine[rnd(behindLine.length)];
-    target = aheadOfLine[rnd(aheadOfLine.length)];
-  } else if (r < 0.65 && aheadOfLine.length >= 2) {
-    // Ball already past the defense: both ahead of line — ONSIDE.
-    const sorted = [...aheadOfLine].sort((a, b) => a.x - b.x);
-    passer = sorted[0]; // pick the one further back as passer
-    const forwardCandidates = sorted.filter(a => a.x > passer.x);
-    target = forwardCandidates.length > 0
-      ? forwardCandidates[rnd(forwardCandidates.length)]
-      : sorted[sorted.length - 1];
-  }
-
-  // Fallback — pick any two attackers ensuring a forward pass
-  if (!passer || !target || passer === target) {
-    const sorted = [...attackers].sort((a, b) => a.x - b.x);
-    // Pick passer from the back half, target from those ahead of passer
+  if (r < 0.6 && mids.length >= 1 && forwards.length >= 1) {
+    // Through-ball: midfielder → forward near the offside line (most interesting)
+    passer = mids[rnd(mids.length)];
+    target = forwards[rnd(forwards.length)];
+  } else if (r < 0.8 && forwards.length >= 2) {
+    // Forward-to-forward: one-two near the line
+    const sorted = [...forwards].sort((a, b) => a.x - b.x);
+    passer = sorted[0];
+    target = sorted[sorted.length - 1];
+  } else if (mids.length >= 2) {
+    // Midfielder-to-midfielder: building up play
+    const sorted = [...mids].sort((a, b) => a.x - b.x);
     const passerIdx = rnd(Math.max(1, sorted.length - 1));
     passer = sorted[passerIdx];
-    const forwardCandidates = sorted.filter(a => a.x > passer.x);
-    if (forwardCandidates.length > 0) {
-      target = forwardCandidates[rnd(forwardCandidates.length)];
-    } else {
-      // All at same X — just pick two different ones
-      passer = sorted[0];
-      target = sorted[sorted.length - 1];
-    }
+    const ahead = sorted.filter(a => a.x > passer.x);
+    target = ahead.length > 0 ? ahead[rnd(ahead.length)] : sorted[sorted.length - 1];
+  }
+
+  // Fallback — any two attackers, forward pass
+  if (!passer || !target || passer === target) {
+    const sorted = [...attackers].sort((a, b) => a.x - b.x);
+    passer = sorted[0];
+    target = sorted[sorted.length - 1];
   }
 
   selectedPasser = passer;
