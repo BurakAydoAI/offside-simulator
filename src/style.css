@@ -139,6 +139,15 @@ button {
   border: 1px solid #666;
 }
 
+#viewBtn {
+  background: #2c3e50;
+  color: #ecf0f1;
+  border: 1px solid #455a72;
+}
+#viewBtn:hover {
+  background: #34495e;
+}
+
 .hidden {
   display: none !important;
 }
@@ -243,8 +252,9 @@ button {
 }
 
 #pitch-container {
-  width: 1280px;
-  height: 720px;
+  width: 100%;
+  max-width: 1280px;
+  aspect-ratio: 16 / 9;
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
@@ -295,3 +305,46 @@ button {
   display: inline-block;
 }
 .green-line { background: #f1c40f; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  body {
+    padding: 8px;
+  }
+
+  h1 {
+    font-size: 1.1rem;
+  }
+
+  #langBtn {
+    padding: 4px 10px;
+    font-size: 0.75rem;
+  }
+
+  .instructions {
+    font-size: 0.78rem;
+  }
+
+  .buttons {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  button {
+    padding: 6px 12px;
+    font-size: 0.78rem;
+  }
+
+  #pitch-container {
+    aspect-ratio: 2 / 3;
+  }
+
+  #result {
+    font-size: 1rem;
+  }
+
+  #legend {
+    gap: 10px;
+    font-size: 0.75rem;
+  }
+}

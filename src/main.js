@@ -17,6 +17,7 @@ const nextBtn = document.getElementById('nextBtn');
 const guessScoreEl = document.getElementById('guessScore');
 const langBtn = document.getElementById('langBtn');
 const lineToggleBtn = document.getElementById('lineToggleBtn');
+const viewBtn = document.getElementById('viewBtn');
 
 // ── i18n ──
 const I18N = {
@@ -50,6 +51,8 @@ const I18N = {
     offsideLineLabel: 'OFFSIDE LINE',
     lineOn: 'Offside Line: ON',
     lineOff: 'Offside Line: OFF',
+    view2D: 'View: 2D',
+    view3D: 'View: 3D',
     langToggle: 'Türkçe',
   },
   tr: {
@@ -82,6 +85,8 @@ const I18N = {
     offsideLineLabel: 'OFSAYT ÇİZGİSİ',
     lineOn: 'Ofsayt Çizgisi: AÇIK',
     lineOff: 'Ofsayt Çizgisi: KAPALI',
+    view2D: 'Görünüm: 2D',
+    view3D: 'Görünüm: 3D',
     langToggle: 'English',
   },
 };
@@ -101,17 +106,23 @@ const PLAYER_BODY_HEIGHT = 1.0;
 // ── Scene setup ──
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1a1a2e);
-scene.fog = new THREE.Fog(0x1a1a2e, 80, 150);
+const fog3D = new THREE.Fog(0x1a1a2e, 80, 150);
+scene.fog = fog3D;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(1280, 720);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 renderer.domElement.style.touchAction = 'none';
 
-const camera = new THREE.PerspectiveCamera(50, 1280 / 720, 0.1, 500);
+const initRect = container.getBoundingClientRect();
+renderer.setSize(initRect.width, initRect.height);
+
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 768;
+let is2DView = isMobile;
+
+const camera = new THREE.PerspectiveCamera(50, initRect.width / initRect.height, 0.1, 500);
 camera.position.set(0, 55, 45);
 camera.lookAt(0, 0, 0);
 
@@ -122,7 +133,42 @@ controls.minDistance = 20;
 controls.maxDistance = 120;
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
+controls.screenSpacePanning = true;
 controls.update();
+
+function applyViewMode() {
+  const rect = container.getBoundingClientRect();
+  const isPortrait = rect.width < rect.height;
+  const s = t();
+
+  if (is2DView) {
+    // Top-down: high above, looking straight down, no rotation
+    camera.position.set(0, 120, 0);
+    camera.up.set(isPortrait ? 1 : 0, 0, isPortrait ? 0 : -1);
+    camera.lookAt(0, 0, 0);
+    controls.target.set(0, 0, 0);
+    controls.enableRotate = false;
+    controls.minDistance = 40;
+    controls.maxDistance = 200;
+    controls.maxPolarAngle = 0;
+    scene.fog = null;
+  } else {
+    // 3D perspective
+    camera.position.set(0, 55, 45);
+    camera.up.set(0, 1, 0);
+    camera.lookAt(0, 0, 0);
+    controls.target.set(0, 0, 0);
+    controls.enableRotate = true;
+    controls.minDistance = 20;
+    controls.maxDistance = 120;
+    controls.maxPolarAngle = Math.PI / 2.15;
+    scene.fog = fog3D;
+  }
+  controls.update();
+  viewBtn.textContent = is2DView ? s.view2D : s.view3D;
+}
+
+if (is2DView) applyViewMode();
 
 // ── Lighting ──
 scene.add(new THREE.AmbientLight(0xffffff, 0.7));
@@ -862,6 +908,11 @@ lineToggleBtn.addEventListener('click', () => {
   setOffsideLineVisible(showOffsideLineFlag);
 });
 
+viewBtn.addEventListener('click', () => {
+  is2DView = !is2DView;
+  applyViewMode();
+});
+
 // ── Random scenario ──
 function randRange(min, max) {
   return min + Math.random() * (max - min);
@@ -1071,6 +1122,7 @@ function applyLang() {
   revealBtn.textContent = s.revealBtn;
   nextBtn.textContent = s.nextBtn;
   lineToggleBtn.textContent = showOffsideLineFlag ? s.lineOn : s.lineOff;
+  viewBtn.textContent = is2DView ? s.view2D : s.view3D;
   langBtn.textContent = s.langToggle;
   document.getElementById('legendAttackers').textContent = s.legendAttackers;
   document.getElementById('legendDefenders').textContent = s.legendDefenders;
@@ -1098,6 +1150,12 @@ window.addEventListener('resize', () => {
   camera.aspect = rect.width / rect.height;
   camera.updateProjectionMatrix();
   renderer.setSize(rect.width, rect.height);
+  // Re-orient the 2D camera if screen rotated (portrait ↔ landscape)
+  if (is2DView) {
+    const isPortrait = rect.width < rect.height;
+    camera.up.set(isPortrait ? 1 : 0, 0, isPortrait ? 0 : -1);
+    camera.lookAt(controls.target);
+  }
 });
 
 // ── Render loop ──
